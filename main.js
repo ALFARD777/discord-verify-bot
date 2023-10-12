@@ -1,38 +1,43 @@
-const { GatewayIntentBits, Client, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle	} = require('discord.js');
+const { GatewayIntentBits, Client, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const config = require('./config.json');
-
 const token = config.token;
 const clientId = config.clientId;
 const guildId = config.guildId;
+const userTableName = config.userTableName;
+const verifyChannelId = config.verifyChannelId;
+const mysql = require('mysql2');
 const commands = [
 	{
 		name: 'start',
 		description: 'Отправляет закрепленное сообщение',
 	},
 ];
+const con = mysql.createConnection({
+	host: 'sql11.freemysqlhosting.net',
+	user: 'sql11652922',
+	password: 'tjbwY5c5dl',
+	database: 'sql11652922',
+});
 
 const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
+		GatewayIntentBits.GuildMembers,
 	],
 });
-
+require("./Anti-Crash-V14.js")(client);
 const rest = new REST({ version: '10' }).setToken(token);
 
 (async () => {
 	try {
-		console.log('Started refreshing application (/) commands.');
-
 		await rest.put(
 			Routes.applicationGuildCommands(clientId, guildId),
 			{ body: commands },
 		);
-
-		console.log('Successfully reloaded application (/) commands.');
 	} catch (error) {
 		console.error(error);
 	}
@@ -43,47 +48,197 @@ client.on('ready', () => {
 });
 
 client.on('interactionCreate', async (interaction) => {
-	if (!(interaction.isCommand() || interaction.isModalSubmit())) return;
 	if (interaction.isCommand()) {
 		const { commandName } = interaction;
-		if (commandName === 'start' && interaction.channel.id == 1031361900186968086) {
-			const button = new ActionRowBuilder()
-				.addComponents(new ButtonBuilder()
-				.setCustomId('verification')
-				.setLabel('Верификация')
-				.setStyle(ButtonStyle.Success)
-			);
-			const embed = new EmbedBuilder()
-					.setTitle('Верификация')
-					.setColor('#FF0000')
-					.setDescription('Нажмите на кнопку ниже для верификации!');
-			const mes = await interaction.channel.send({
-					embeds: [embed],
-					components: [button],
-			})
-			const collector = mes.createMessageComponentCollector();
-			collector.on('collect', async i => {
-				await i.deferUpdate();
-				const modal = new ModalBuilder()
-					.setCustomId('verifyModal')
-					.setTitle('Верификация');
-				const codeInput = new TextInputBuilder()
-					.setCustomId('code')
-					.setLabel("Введите ваш код")
-					.setMinLength(5)
-					.setMaxLength(5)
-					.setRequired(true)
-					.setStyle(TextInputStyle.Short);
-				modal.addComponents(new ActionRowBuilder().addComponents(codeInput));
-				await interaction.showModal(modal);
-			});
-		}
+		if (commandName === 'start') {
+			const channel = await client.channels.fetch(verifyChannelId);
+			if (channel) {
+				const mes = await channel.send({
+					embeds: [
+						new EmbedBuilder()
+							.setTitle('Верификация')
+							.setColor('#FF0000')
+							.setDescription('Нажмите на кнопку ниже для верификации!')
+					],
+					components: [
+						new ActionRowBuilder()
+							.addComponents(
+								new ButtonBuilder()
+									.setCustomId('verification')
+									.setLabel('Верификация')
+									.setStyle(ButtonStyle.Success)
+							)
+					],
+				})
+				const collector = mes.createMessageComponentCollector();
+				const success = await interaction.reply({
+					embeds: [
+						new EmbedBuilder()
+							.setTitle('Успешно отправлено!')
+							.setDescription('Канал отправки: <#' + channel.id + '>')
+							.setColor('#008000')
+					],
+					ephemeral: true,
+				})
+				const run = async i => {
+					i.showModal(
+						new ModalBuilder()
+							.setCustomId('verifyModal')
+							.setTitle('Верификация')
+							.addComponents(
+								new ActionRowBuilder()
+									.addComponents(
+										new TextInputBuilder()
+											.setCustomId('code')
+											.setLabel('Введите ваш код')
+											.setMinLength(5)
+											.setMaxLength(5)
+											.setRequired(true)
+											.setStyle(TextInputStyle.Short)
+									)
+							)
+					)
+				};
+				collector.on('collect', async i => run(i));
+			}
+			else {
+				await interaction.reply({
+					embeds: [
+						new EmbedBuilder()
+							.setTitle('Непредвиденная ошибка!')
+							.setColor('#FF0000')
+							.setDescription('Обратитесь к разработчику. Код ошибки: -3')
+					]
+				});
+				console.error('Channel not exists');
+			}
+		};
 	}
 	if (interaction.isModalSubmit()) {
-		await interaction.deferUpdate();
-		const code = interaction.fields.getTextInputValue('code');
-		await interaction.channel.send("Code: " + code);
+		try {
+			con.connect((err) => {
+				if (err) throw err;
+
+
+				const code = interaction.fields.getTextInputValue('code');
+				con.query('SELECT name FROM `' + userTableName + '` WHERE verify_code = ' + code, (err, results, fields) => {
+					if (err) throw err;
+					if (results.length > 0) {
+						const name = results[0].name;
+						con.query('UPDATE ' + userTableName + ' SET discord_id = ' + interaction.user.id + ' WHERE verify_code = ' + code, (err, results) => {
+							if (err) throw err
+							if (results.affectedRows > 0) {
+								interaction.member.setNickname(name);
+								interaction.reply({
+									embeds: [
+										new EmbedBuilder()
+											.setTitle('Успешно')
+											.setDescription('Вы были успешно верифицированы!')
+											.setColor('#008000')
+									],
+									ephemeral: true,
+								})
+							}
+							else throw err;
+							con.end((err) => {
+								if (err) throw err;
+							});
+						});
+					}
+					else {
+						interaction.reply({
+							embeds: [
+								new EmbedBuilder()
+									.setColor('#FF0000')
+									.setTitle('Ошибка')
+									.setDescription('Вы ввели неверный код или его срок действия истек')
+							],
+							ephemeral: true
+						});
+					}
+				});
+			})
+		}
+		catch (err) {
+			console.error('-1: Ошибка при выполнении запроса к базе данных:\n', err);
+			await interaction.reply({
+				embeds: [
+					new EmbedBuilder()
+						.setColor('#FF0000')
+						.setTitle('Произошла ошибка. Обратитесь в тех. поддержку')
+						.setDescription('Код ошибки: -1')
+				],
+				ephemeral: true,
+			});
+		};
 	}
+	//const code = interaction.fields.getTextInputValue('code');
+	//interaction.reply({
+	//	embeds: [
+	//		new EmbedBuilder()
+	//			.setTitle("Код принят")
+	//			.setColor('#008000')
+	//			.setDescription('Введенный код: *' + code + '*')
+	//	],
+	//	ephemeral: true,
+	//});
+	//try {
+	//	(await con).connect(function(err) {
+	//		if (err) throw err;
+	//		console.log("Connected!");
+	//	  });
+	//	}
+	//	(await con).connect(function (err) {
+	//		if (err) throw err;
+	//		con.query('SELECT name FROM `' + userTableName + '` WHERE verify_code = ' + code, function(err, result, fields) {
+	//			if (err) throw err;
+	//			console.log(result)
+	//		});
+	//	});
+	//	(await con).connect()
+	//	//const playerNick = (await mysqlconnection).query('SELECT name FROM `' + userTableName + '` WHERE verify_code = ' + code);
+	//	//console.log(playerNick);
+	//	const playerNick = "";
+	//	if (playerNick.toString.length > 0) {
+	//		const nickname = playerNick[0].nickname;
+	//		console.log(`Найден пользователь: ${nickname}`);
+	//		const [result] = (await mysqlconnection).execute('UPDATE ' + userTableName + ' SET discord_id = ' + interaction.user.id + ' WHERE verify_code = ' + code);
+	//		interaction.member.setNickname((await playerNick).toString());
+	//		if (result.affectedRows > 0) {
+	//			await interaction.reply({
+	//				embeds: [
+	//					new EmbedBuilder()
+	//						.setTitle('Успешно')
+	//						.setDescription('Вы были успешно верифицированы!')
+	//						.setColor('#008000')
+	//				]
+	//			})
+	//		}
+	//	}
+	//	else {
+	//		await interaction.reply({
+	//			embeds: [
+	//				new EmbedBuilder()
+	//					.setColor('#FF0000')
+	//					.setTitle('Ошибка')
+	//					.setDescription('Вы ввели неверный код или его срок действия истек')
+	//			],
+	//			ephemeral: true
+	//		});
+	//	}
+	//}
+	//catch (error) {
+	//	console.error('-1: Ошибка при выполнении запроса к базе данных:\n', error);
+	//	await interaction.reply({
+	//		embeds: [
+	//			new EmbedBuilder()
+	//				.setColor('#FF0000')
+	//				.setTitle('Произошла ошибка. Обратитесь в тех. поддержку')
+	//				.setDescription('Код ошибки: -1')
+	//		],
+	//		ephemeral: true,
+	//	});
+	//}
 });
 
 client.login(token);
