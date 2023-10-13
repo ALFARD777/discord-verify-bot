@@ -1,7 +1,11 @@
 {
-    "token": "MTE2MTc2OTgxNjI3MzcxNTI5Mg.GSMANM.HUrEdZVxecpFh46R-a84var-wmM5BmMpl62Kxo",
-    "clientId": "1161769816273715292",
-    "guildId": "1031361899679449098",
-    "userTableName": "users",
-    "verifyChannelId": "1031363417228976138"
+    "token": "",
+    "clientId": "",
+    "guildId": "",
+    "verifyChannelId": "",
+    "db_host": "",
+    "db_user": "",
+    "db_pass": "",
+    "db_name": "",
+    "db_table": ""
 }

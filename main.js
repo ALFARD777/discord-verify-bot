@@ -5,7 +5,7 @@ const config = require('./config.json');
 const token = config.token;
 const clientId = config.clientId;
 const guildId = config.guildId;
-const userTableName = config.userTableName;
+const userTableName = config.db_table;
 const verifyChannelId = config.verifyChannelId;
 const mysql = require('mysql2');
 const commands = [
@@ -15,10 +15,10 @@ const commands = [
 	},
 ];
 const con = mysql.createConnection({
-	host: 'sql11.freemysqlhosting.net',
-	user: 'sql11652922',
-	password: 'tjbwY5c5dl',
-	database: 'sql11652922',
+	host: config.db_host,
+	user: config.db_user,
+	password: config.db_pass,
+	database: config.db_name,
 });
 
 const client = new Client({
