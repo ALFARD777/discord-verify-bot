@@ -7,7 +7,6 @@ const clientId = config.clientId;
 const guildId = config.guildId;
 const userTableName = config.db_table;
 const verifyChannelId = config.verifyChannelId;
-const adminRoleId = config.adminRoleId;
 const mysql = require('mysql2');
 const commands = [
 	{
@@ -49,7 +48,7 @@ const rest = new REST({ version: '10' }).setToken(token);
 
 client.on('ready', () => {
 	console.log(`Бот запущен как ${client.user.tag}!`);
-	const channel = client.channels.fetch(verifyChannelId);
+	const channel = client.channels.cache.get(verifyChannelId);
 	if (channel) {
 		const mes = channel.send({
 			embeds: [
