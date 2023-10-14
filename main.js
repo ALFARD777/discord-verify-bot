@@ -49,8 +49,11 @@ const rest = new REST({ version: '10' }).setToken(token);
 client.on('ready', () => {
 	console.log(`Бот запущен как ${client.user.tag}!`);
 	const channel = client.channels.cache.get(verifyChannelId);
+
+	channel.bulkDelete(1);
+
 	if (channel) {
-		const mes = channel.send({
+		channel.send({
 			embeds: [
 				new EmbedBuilder()
 					.setTitle('Верификация')
@@ -67,32 +70,31 @@ client.on('ready', () => {
 					)
 			],
 		})
-		const collector = mes.createMessageComponentCollector();
-		const run = async i => {
-			i.showModal(
-				new ModalBuilder()
-					.setCustomId('verifyModal')
-					.setTitle('Верификация')
-					.addComponents(
-						new ActionRowBuilder()
-							.addComponents(
-								new TextInputBuilder()
-									.setCustomId('code')
-									.setLabel('Введите ваш 5-значный код')
-									.setMinLength(5)
-									.setMaxLength(5)
-									.setRequired(true)
-									.setStyle(TextInputStyle.Short)
-							)
-					)
-			)
-		};
-		collector.on('collect', async i => run(i));
 	}
 });
 
 client.on('interactionCreate', async (interaction) => {
-	if (interaction.isModalSubmit()) {
+	if (interaction.isButton()) {
+		interaction.showModal(
+			new ModalBuilder()
+				.setCustomId('verifyModal')
+				.setTitle('Верификация')
+				.addComponents(
+					new ActionRowBuilder()
+						.addComponents(
+							new TextInputBuilder()
+								.setCustomId('code')
+								.setLabel('Введите ваш 5-значный код')
+								.setMinLength(5)
+								.setMaxLength(5)
+								.setRequired(true)
+								.setStyle(TextInputStyle.Short)
+						)
+				)
+		)
+
+	}
+	else if (interaction.isModalSubmit()) {
 		try {
 			con.connect((err) => {
 				if (err) throw err;
@@ -100,11 +102,10 @@ client.on('interactionCreate', async (interaction) => {
 				con.query('SELECT name FROM `' + userTableName + '` WHERE verify_code = ' + code, (err, results, fields) => {
 					if (err) throw err;
 					if (results.length > 0) {
-						const name = results[0].name;
 						con.query('UPDATE ' + userTableName + ' SET discord_id = ' + interaction.user.id + ' WHERE verify_code = ' + code, (err, results) => {
 							if (err) throw err
 							if (results.affectedRows > 0) {
-								interaction.member.setNickname(name);
+								//interaction.member.setNickname(name);
 								interaction.reply({
 									embeds: [
 										new EmbedBuilder()
