@@ -25,9 +25,12 @@ const con = mysql.createConnection({
 const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMembers,
+		GatewayIntentBits.GuildModeration,
+		GatewayIntentBits.GuildPresences,
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
-		GatewayIntentBits.GuildMembers,
+		GatewayIntentBits.GuildScheduledEvents
 	],
 });
 require("./Anti-Crash-V14.js")(client);
@@ -46,88 +49,54 @@ const rest = new REST({ version: '10' }).setToken(token);
 
 client.on('ready', () => {
 	console.log(`Бот запущен как ${client.user.tag}!`);
+	const channel = client.channels.fetch(verifyChannelId);
+	if (channel) {
+		const mes = channel.send({
+			embeds: [
+				new EmbedBuilder()
+					.setTitle('Верификация')
+					.setColor('#FF0000')
+					.setDescription('Нажмите на кнопку ниже для верификации!')
+			],
+			components: [
+				new ActionRowBuilder()
+					.addComponents(
+						new ButtonBuilder()
+							.setCustomId('verification')
+							.setLabel('Верификация')
+							.setStyle(ButtonStyle.Success)
+					)
+			],
+		})
+		const collector = mes.createMessageComponentCollector();
+		const run = async i => {
+			i.showModal(
+				new ModalBuilder()
+					.setCustomId('verifyModal')
+					.setTitle('Верификация')
+					.addComponents(
+						new ActionRowBuilder()
+							.addComponents(
+								new TextInputBuilder()
+									.setCustomId('code')
+									.setLabel('Введите ваш 5-значный код')
+									.setMinLength(5)
+									.setMaxLength(5)
+									.setRequired(true)
+									.setStyle(TextInputStyle.Short)
+							)
+					)
+			)
+		};
+		collector.on('collect', async i => run(i));
+	}
 });
 
 client.on('interactionCreate', async (interaction) => {
-	if (interaction.isCommand()) {
-		const { commandName } = interaction;
-		if (commandName === 'start') {
-			if (!interaction.member.roles.cache.has(adminRoleId) {
-				interaction.Reply({
-					content: 'У Вас нет прав на выполнение данной команды',
-					ephemeral: true
-				})
-				return;
-			}
-			const channel = await client.channels.fetch(verifyChannelId);
-			if (channel) {
-				const mes = await channel.send({
-					embeds: [
-						new EmbedBuilder()
-							.setTitle('Верификация')
-							.setColor('#FF0000')
-							.setDescription('Нажмите на кнопку ниже для верификации!')
-					],
-					components: [
-						new ActionRowBuilder()
-							.addComponents(
-								new ButtonBuilder()
-									.setCustomId('verification')
-									.setLabel('Верификация')
-									.setStyle(ButtonStyle.Success)
-							)
-					],
-				})
-				const collector = mes.createMessageComponentCollector();
-				const success = await interaction.reply({
-					embeds: [
-						new EmbedBuilder()
-							.setTitle('Успешно отправлено!')
-							.setDescription('Канал отправки: <#' + channel.id + '>')
-							.setColor('#008000')
-					],
-					ephemeral: true,
-				})
-				const run = async i => {
-					i.showModal(
-						new ModalBuilder()
-							.setCustomId('verifyModal')
-							.setTitle('Верификация')
-							.addComponents(
-								new ActionRowBuilder()
-									.addComponents(
-										new TextInputBuilder()
-											.setCustomId('code')
-											.setLabel('Введите ваш код')
-											.setMinLength(5)
-											.setMaxLength(5)
-											.setRequired(true)
-											.setStyle(TextInputStyle.Short)
-									)
-							)
-					)
-				};
-				collector.on('collect', async i => run(i));
-			}
-			else {
-				await interaction.reply({
-					embeds: [
-						new EmbedBuilder()
-							.setTitle('Непредвиденная ошибка!')
-							.setColor('#FF0000')
-							.setDescription('Обратитесь к разработчику. Код ошибки: -3')
-					]
-				});
-				console.error('Channel not exists');
-			}
-		};
-	}
 	if (interaction.isModalSubmit()) {
 		try {
 			con.connect((err) => {
 				if (err) throw err;
-
-
 				const code = interaction.fields.getTextInputValue('code');
 				con.query('SELECT name FROM `' + userTableName + '` WHERE verify_code = ' + code, (err, results, fields) => {
 					if (err) throw err;
@@ -141,7 +110,7 @@ client.on('interactionCreate', async (interaction) => {
 									embeds: [
 										new EmbedBuilder()
 											.setTitle('Успешно')
-											.setDescription('Вы были успешно верифицированы!')
+											.setDescription('Вы были успешно верифицированы!\n*Напишите в игровой чат /verify для принятия изменений*')
 											.setColor('#008000')
 									],
 									ephemeral: true,
