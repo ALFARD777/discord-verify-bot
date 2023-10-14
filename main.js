@@ -7,6 +7,7 @@ const clientId = config.clientId;
 const guildId = config.guildId;
 const userTableName = config.db_table;
 const verifyChannelId = config.verifyChannelId;
+const adminRoleId = config.adminRoleId;
 const mysql = require('mysql2');
 const commands = [
 	{
@@ -51,6 +52,13 @@ client.on('interactionCreate', async (interaction) => {
 	if (interaction.isCommand()) {
 		const { commandName } = interaction;
 		if (commandName === 'start') {
+			if (!interaction.member.roles.cache.has(adminRoleId) {
+				interaction.Reply({
+					content: 'У Вас нет прав на выполнение данной команды',
+					ephemeral: true
+				})
+				return;
+			}
 			const channel = await client.channels.fetch(verifyChannelId);
 			if (channel) {
 				const mes = await channel.send({
