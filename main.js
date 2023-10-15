@@ -123,6 +123,12 @@ client.on('interactionCreate', async (interaction) => {
 								})
 							}
 							else throw err;
+							con.end((err) => {
+								if (err) throw err;
+							});
+						});
+						con.end((err) => {
+							if (err) throw err;
 						});
 					}
 					else {
@@ -137,11 +143,17 @@ client.on('interactionCreate', async (interaction) => {
 							ephemeral: true
 						});
 					}
+					con.end((err) => {
+						if (err) throw err;
+					});
 				});
 				con.end((err) => {
 					if (err) throw err;
 				});
 			})
+			con.end((err) => {
+				if (err) throw err;
+			});
 		}
 		catch (err) {
 			console.error('-1: Ошибка при выполнении запроса к базе данных:\n', err);
