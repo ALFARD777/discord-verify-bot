@@ -96,22 +96,16 @@ client.on('interactionCreate', async (interaction) => {
 	}
 	else if (interaction.isModalSubmit()) {
 		try {
-			const logc = client.channels.cache.get('1142914784602366002');
 			con.connect((err) => {
 				if (err) throw err;
-				logc.send('[' + interaction.user.displayName + '] Connected to DB!' );
 				const code = interaction.fields.getTextInputValue('code');
 				con.query('SELECT name FROM `' + userTableName + '` WHERE verify_code = \'' + code + '\'', (err, results, fields) => {
 					if (err) throw err;
-					logc.send('[' + interaction.user.displayName + '] Parsed codes!' );
 					if (results.length > 0) {
-						logc.send('[' + interaction.user.displayName + '] Code is correct!' )
 						con.query('UPDATE ' + userTableName + ' SET discord_id = ' + interaction.user.id + ', verify_code = NULL WHERE verify_code = \'' + code + '\'', (err, results) => {
 							if (err) throw err
-							logc.send('[' + interaction.user.displayName + '] Updated discord id!' )
 							if (results.affectedRows > 0) {
 								interaction.member.roles.add(config.verifyRoleId);
-								logc.send('[' + interaction.user.displayName + '] Added roles!' )
 								interaction.reply({
 									embeds: [
 										new EmbedBuilder()
@@ -126,7 +120,6 @@ client.on('interactionCreate', async (interaction) => {
 						});
 					}
 					else {
-						logc.send('[' + interaction.user.displayName + '] Code is incorrect!' )
 						interaction.reply({
 							embeds: [
 								new EmbedBuilder()
