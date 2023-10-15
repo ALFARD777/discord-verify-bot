@@ -142,6 +142,9 @@ client.on('interactionCreate', async (interaction) => {
 							],
 							ephemeral: true
 						});
+						con.end((err) => {
+							if (err) throw err;
+						});
 					}
 					con.end((err) => {
 						if (err) throw err;
@@ -165,6 +168,9 @@ client.on('interactionCreate', async (interaction) => {
 						.setDescription('Код ошибки: -1')
 				],
 				ephemeral: true,
+			});
+			con.end((err) => {
+				if (err) throw err;
 			});
 		};
 	}
