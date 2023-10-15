@@ -47,7 +47,6 @@ const rest = new REST({ version: '10' }).setToken(token);
 })();
 
 client.on('ready', () => {
-	console.log(`Бот запущен как ${client.user.tag}!`);
 	const channel = client.channels.cache.get(verifyChannelId);
 
 	channel.bulkDelete(1);
@@ -71,6 +70,7 @@ client.on('ready', () => {
 			],
 		})
 	}
+	console.log(`Бот запущен как ${client.user.tag}!`);
 });
 
 client.on('interactionCreate', async (interaction) => {
@@ -117,9 +117,6 @@ client.on('interactionCreate', async (interaction) => {
 								})
 							}
 							else throw err;
-							con.end((err) => {
-								if (err) throw err;
-							});
 						});
 					}
 					else {
@@ -133,6 +130,9 @@ client.on('interactionCreate', async (interaction) => {
 							ephemeral: true
 						});
 					}
+				});
+				con.end((err) => {
+					if (err) throw err;
 				});
 			})
 		}
