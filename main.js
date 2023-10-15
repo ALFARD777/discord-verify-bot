@@ -105,7 +105,7 @@ client.on('interactionCreate', async (interaction) => {
 						con.query('UPDATE ' + userTableName + ' SET discord_id = ' + interaction.user.id + ' WHERE verify_code = ' + code, (err, results) => {
 							if (err) throw err
 							if (results.affectedRows > 0) {
-								//interaction.member.setNickname(name);
+								interaction.member.roles.add(config.verifyRoleId);
 								interaction.reply({
 									embeds: [
 										new EmbedBuilder()
