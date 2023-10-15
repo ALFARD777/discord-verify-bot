@@ -99,10 +99,10 @@ client.on('interactionCreate', async (interaction) => {
 			con.connect((err) => {
 				if (err) throw err;
 				const code = interaction.fields.getTextInputValue('code');
-				con.query('SELECT name FROM `' + userTableName + '` WHERE verify_code = ' + code, (err, results, fields) => {
+				con.query('SELECT name FROM `' + userTableName + '` WHERE verify_code = \'' + code + '\'', (err, results, fields) => {
 					if (err) throw err;
 					if (results.length > 0) {
-						con.query('UPDATE ' + userTableName + ' SET discord_id = ' + interaction.user.id + ' WHERE verify_code = ' + code, (err, results) => {
+						con.query('UPDATE ' + userTableName + ' SET discord_id = ' + interaction.user.id + ', verify_code = NULL WHERE verify_code = \'' + code + '\'', (err, results) => {
 							if (err) throw err
 							if (results.affectedRows > 0) {
 								interaction.member.roles.add(config.verifyRoleId);
