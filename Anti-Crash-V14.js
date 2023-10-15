@@ -11,7 +11,7 @@ module.exports = (client) => {
     console.log(err);
 
     embed
-      .setTitle("Discord API Error")
+      .setTitle("Ошибка Discord API")
       .setURL("https://discordjs.guide/popular-topics/errors.html#api-errors")
       .setDescription(
         `\`\`\`${inspect(err, { depth: 0 }).slice(0, 1000)}\`\`\``
@@ -46,7 +46,7 @@ module.exports = (client) => {
     console.log(err, "\n", origin);
 
     embed
-      .setTitle("Uncaught Exception/Catch")
+      .setTitle("Необработанное исключение")
       .setURL("https://nodejs.org/api/process.html#event-uncaughtexception")
       .addFields(
         {
