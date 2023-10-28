@@ -65,6 +65,53 @@ client.on('ready', () => {
 		})
 	}
 	console.log(`Бот запущен как ${client.user.tag}!`);
+	const taskTimerInterval = 60000;
+	setInterval(() => {
+		try {
+			var con = mysql.createConnection({
+				host: config.db_host,
+				user: config.db_user,
+				password: config.db_pass,
+				database: config.db_name,
+			});
+			con.connect((err) => {
+				if (err) throw err;
+				con.query('SELECT * FROM `discordbot_tasks`', (err, results, fields) => {
+					if (err) throw err;
+					if (results.length > 0) {
+						for (const row of results) {
+							const userId = row.discord_id;
+							const taskType = row.task_type;
+							const roleId = row.role_id;
+							if (taskType == "GIVE") {
+								try {
+									client.users.cache.get(userId).roles.add(guild.roles.cache.get(roleId));
+								} catch (error) {
+									console.error('-5: Ошибка при добавлении роли:', error);
+								}
+							}
+							else if (taskType == "REMOVE") {
+								try {
+									client.users.cache.get(userId).roles.add(guild.roles.cache.get(roleId));
+								} catch (error) {
+									console.error('-6: Ошибка при удалении роли:', error);
+								}
+							}
+						}
+						con.query('DELETE FROM `discordbot_tasks`', function(err, results, fields) {
+							if (err) throw err;
+						});
+					}
+					else {
+						console.error('-7: Ошибка при парсинге задач');
+					}
+				});
+			})
+		}
+		catch (err) {
+			console.error('-4: Ошибка при выполнении запроса к базе данных:\n', err);
+		}
+	}, taskTimerInterval);
 });
 
 client.on('interactionCreate', async (interaction) => {
@@ -90,12 +137,12 @@ client.on('interactionCreate', async (interaction) => {
 	}
 	else if (interaction.isModalSubmit()) {
 		try {
-                        var con = mysql.createConnection({
-                                host: config.db_host,
-                                user: config.db_user,
-                                password: config.db_pass,
-                                database: config.db_name,
-                        });
+			var con = mysql.createConnection({
+				host: config.db_host,
+				user: config.db_user,
+				password: config.db_pass,
+				database: config.db_name,
+			});
 			con.connect((err) => {
 				if (err) throw err;
 				const code = interaction.fields.getTextInputValue('code');
@@ -131,7 +178,7 @@ client.on('interactionCreate', async (interaction) => {
 						});
 					}
 				});
-			})
+			});
 		}
 		catch (err) {
 			console.error('-1: Ошибка при выполнении запроса к базе данных:\n', err);
