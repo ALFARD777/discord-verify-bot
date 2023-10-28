@@ -14,12 +14,6 @@ const commands = [
 		description: 'Отправляет закрепленное сообщение',
 	},
 ];
-const con = mysql.createConnection({
-	host: config.db_host,
-	user: config.db_user,
-	password: config.db_pass,
-	database: config.db_name,
-});
 
 const client = new Client({
 	intents: [
@@ -96,6 +90,12 @@ client.on('interactionCreate', async (interaction) => {
 	}
 	else if (interaction.isModalSubmit()) {
 		try {
+                        var con = mysql.createConnection({
+                                host: config.db_host,
+                                user: config.db_user,
+                                password: config.db_pass,
+                                database: config.db_name,
+                        });
 			con.connect((err) => {
 				if (err) throw err;
 				const code = interaction.fields.getTextInputValue('code');
@@ -110,7 +110,7 @@ client.on('interactionCreate', async (interaction) => {
 									embeds: [
 										new EmbedBuilder()
 											.setTitle('Успешно')
-											.setDescription('Вы были успешно верифицированы!\n*Напишите в игровой чат /verify для принятия изменений*')
+											.setDescription('Вы были успешно верифицированы!\n*Вернитесь в игру и напишите в игровой чат /verify для принятия изменений*')
 											.setColor('#008000')
 									],
 									ephemeral: true,
